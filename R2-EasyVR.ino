@@ -18,6 +18,19 @@
   #define pcSerial SERIAL_PORT_MONITOR
 #endif
 
+
+
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
 SoftwareSerial ComPort(10,11); //10 RX // 11 TX
 
 #include "EasyVR.h"
@@ -50,6 +63,17 @@ enum Group1
   G1_R2 = 6,
 };
 
+
+
+char *group1[] = { 
+  
+  "Hilf Mir.Setup.Musik",
+  "Wie gehts.Drive.Stop",
+  "R2"
+  };
+
+ // "Testzeichensazluunge1"
+
 enum Group2 
 {
   G2_GIB_MIR_FEUER = 0,
@@ -64,6 +88,19 @@ enum Group2
   G2_R2 = 9,
 };
 
+char *group2[] = { 
+  
+   "Gib mir Feuer.Danke",
+   "Festhalten.Fest.Los",
+   "Schrauber.Tool.Power",
+    "Stop.R2"};
+
+
+
+// "Testzeichensazluunge1"
+
+
+
 enum Group3 
 {
   G3_AKKUSTAND = 0,
@@ -73,6 +110,17 @@ enum Group3
   G3_R2 = 4,
 };
 
+char *group3[] = { 
+  
+   "Akkustand.Mode.Panels",
+   "Smirk.R2"};
+
+
+
+// "Testzeichensazluunge1"
+
+
+
 enum Group4 
 {
   G4_CANTINA = 0,
@@ -81,6 +129,13 @@ enum Group4
   G4_STOP = 3,
   G4_R2 = 4,
 };
+
+
+char *group4[] = { 
+  
+   "Cantina.Manama.Play",
+   "Stop.R2"};
+
 
 //Grammars and Words
 enum Wordsets
@@ -102,6 +157,7 @@ enum Wordset1
   S1_HELLO = 7,
 };
 
+
 enum Wordset2 
 {
   S2_LEFT = 0,
@@ -111,6 +167,7 @@ enum Wordset2
   S2_FORWARD = 4,
   S2_BACKWARD = 5,
 };
+
 
 enum Wordset3 
 {
@@ -134,11 +191,33 @@ int8_t group, idx;
 // store last group
 int8_t last_group;
 
+
+
+unsigned long previousMillis = 0;        // will store last time LED was updated
+
+// constants won't change:
+const long interval = 10;
+
+String setcom;
+String CMD;
+int cur=0;
+
+int siz=0;
+
 void setup()
 {
   // setup PC serial port
   pcSerial.begin(9600);
   ComPort.begin(9600);
+
+// SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+
+  
 bridge:
   // bridge mode?
   int mode = easyvr.bridgeRequested(pcSerial);
@@ -216,6 +295,19 @@ bridge:
 
 void loop()
 {
+  
+  unsigned long currentMillis = millis();
+  
+  //delay(2000);
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    // if the LED is off turn it on and vice-versa:
+    // displayOut(CMD);
+    }
+  displayOut(CMD);
+  
   if (easyvr.getID() < EasyVR::EASYVR3)
     easyvr.setPinOutput(EasyVR::IO1, HIGH); // LED on (listening)
 
@@ -287,6 +379,7 @@ void loop()
           continue;
         pcSerial.print(F(" = "));
         pcSerial.println(name);
+         CMD = name;
         break;
       }
     }
@@ -310,6 +403,7 @@ void loop()
     {
       pcSerial.print(" = ");
       pcSerial.println(name);
+      CMD = name;
     }
     else
       pcSerial.println();
@@ -373,7 +467,7 @@ void action()
     case G1_R2:
       // write your action code here
       sendcom(":SE00");
-      group = 1; // GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      group = 0; // GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     }
     break;
@@ -413,13 +507,15 @@ void action()
     case G2_TOOL:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      setcom = "tool";
       last_group = GROUP_2; //Set Last Group
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G2_POWER:
-      
+      setcom ="power";
+      last_group = GROUP_2;
       // write your action code here
-      // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      group = SET_3; // <-- or jump to another group or wordset for composite commands
       break;
     case G2_STOP:
       // write your action code here
@@ -446,6 +542,7 @@ void action()
     case G3_PANELS:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      setcom ="panels";
       last_group = GROUP_3; //Set Last Group
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
@@ -476,6 +573,7 @@ void action()
     case G4_PLAY:
       // write your action code here
       last_group = GROUP_4; //Set Last Group
+      setcom ="play";
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G4_STOP:
@@ -625,4 +723,5 @@ void action()
     }
     break;
   }
+
 }
