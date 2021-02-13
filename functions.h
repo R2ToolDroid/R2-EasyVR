@@ -165,7 +165,15 @@ void back(int8_t grp){
     tosend.concat(idx);
     sendcom(tosend);
   }
-  
+
+  if (setcom == "mode"){
+    pcSerial.print("mode");
+    pcSerial.println(idx);
+    
+    tosend = "mode";
+    tosend.concat(idx);
+    sendcom(tosend);
+  }
   
   
   

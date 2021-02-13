@@ -1,3 +1,8 @@
+///R2 Remote Voice Control ////
+///UNO plus EasyVR Shield 2///
+///Voice Table by Windows10 Laptop///
+
+
 #include "Arduino.h"
 #if !defined(SERIAL_PORT_MONITOR)
   #error "Arduino version not supported. Please update your IDE to the latest version."
@@ -65,14 +70,15 @@ enum Group1
 
 
 
+//char group1 =   "Hilf Mir | Setup | Musik | Wie gehts | Drive | Stop | R2";
+
 char *group1[] = { 
   
-  "Hilf Mir.Setup.Musik",
-  "Wie gehts.Drive.Stop",
-  "R2"
+   "Hilf Mir.Setup.Musik",
+   "Wie gehts.Drive.Stop",
+   "R2"
   };
-
- // "Testzeichensazluunge1"
+// "Testzeichensazluunge1"
 
 enum Group2 
 {
@@ -88,14 +94,13 @@ enum Group2
   G2_R2 = 9,
 };
 
+//char group2 = "Gib mir Feuer | Danke | Festhalten | Fest | Los | Schrauber | Tool |Power | Stop | R2";
 char *group2[] = { 
   
    "Gib mir Feuer.Danke",
    "Festhalten.Fest.Los",
-   "Schrauber.Tool.Power",
-    "Stop.R2"};
-
-
+   "Schrauber.Tool",
+   "Power.Stop.R2"};
 
 // "Testzeichensazluunge1"
 
@@ -110,11 +115,11 @@ enum Group3
   G3_R2 = 4,
 };
 
+//char group3 =  "Akkustand.Mode.Panels Smirk.R2";
 char *group3[] = { 
   
    "Akkustand.Mode.Panels",
    "Smirk.R2"};
-
 
 
 // "Testzeichensazluunge1"
@@ -131,12 +136,12 @@ enum Group4
 };
 
 
+//char group4 = "Cantina.Manama.Play Stop.R2";
 char *group4[] = { 
   
    "Cantina.Manama.Play",
    "Stop.R2"};
-
-
+// "Testzeichensazluunge1"
 //Grammars and Words
 enum Wordsets
 {
@@ -289,6 +294,10 @@ bridge:
   easyvr.setLanguage(0); //<-- same language set on EasyVR Commander when code was generated
 
   group = EasyVR::TRIGGER; //<-- start group (customize)
+
+  //display.autoscroll();
+
+ 
 }
 
 #include "functions.h"
@@ -301,12 +310,12 @@ void loop()
   //delay(2000);
   if (currentMillis - previousMillis >= interval) {
     // save the last time you blinked the LED
-    previousMillis = currentMillis;
+   // previousMillis = currentMillis;
 
     // if the LED is off turn it on and vice-versa:
-    // displayOut(CMD);
+     //displayOut(CMD);
     }
-  displayOut(CMD);
+   displayOut(CMD);
   
   if (easyvr.getID() < EasyVR::EASYVR3)
     easyvr.setPinOutput(EasyVR::IO1, HIGH); // LED on (listening)
@@ -353,6 +362,7 @@ void loop()
     pcSerial.println("Word: ROBOT");
     // write your action code here
     // group = GROUP_X\SET_X; <-- jump to another group or wordset
+    //displayOut(CMD);
     return;
   }
   else if (idx >= 0)
@@ -361,7 +371,7 @@ void loop()
     beep(group);
     //easyvr.playSound(0, EasyVR::VOL_FULL);
 
-
+    
 
     
     // print debug message
@@ -392,7 +402,7 @@ void loop()
   {
     // beep
     //easyvr.playSound(0, EasyVR::VOL_FULL);
-
+   
     beep(group);
     // print debug message
     uint8_t train = 0;
@@ -534,10 +544,15 @@ void action()
     case G3_AKKUSTAND:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      sendcom("akkustand");
       break;
     case G3_MODE:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      setcom ="mode";
+      last_group = GROUP_3; //Set Last Group
+      group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      
       break;
     case G3_PANELS:
       // write your action code here
@@ -579,7 +594,7 @@ void action()
     case G4_STOP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("$O");
+      sendcom("$s");
       break;
     case G4_R2:
       // write your action code here
@@ -723,5 +738,5 @@ void action()
     }
     break;
   }
-
+     
 }
