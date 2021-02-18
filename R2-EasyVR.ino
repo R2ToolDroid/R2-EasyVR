@@ -42,6 +42,10 @@ SoftwareSerial ComPort(10,11); //10 RX // 11 TX
 
 EasyVR easyvr(port);
 
+String GP;
+String Line;
+String tosend;
+
 //Groups and Commands
 enum Groups
 {
@@ -72,11 +76,10 @@ enum Group1
 
 //char group1 =   "Hilf Mir | Setup | Musik | Wie gehts | Drive | Stop | R2";
 
-char *group1[] = { 
-  
-   "Hilf Mir.Setup.Musik",
-   "Wie gehts.Drive.Stop",
-   "R2"
+char *group1[] = {  
+   " Hilf_Mir Setup Stop",
+   "  Wie_gehts Musik ",
+   " R2 Drive L.R.U.D.F.B",
   };
 // "Testzeichensazluunge1"
 
@@ -96,11 +99,11 @@ enum Group2
 
 //char group2 = "Gib mir Feuer | Danke | Festhalten | Fest | Los | Schrauber | Tool |Power | Stop | R2";
 char *group2[] = { 
-  
-   "Gib mir Feuer.Danke",
-   "Festhalten.Fest.Los",
-   "Schrauber.Tool",
-   "Power.Stop.R2"};
+   "Gib_mir_Feuer  Danke",
+   "Festhalten  Fest Los",
+   "Schrauber  Tool 0-10",
+   "Power 0-10  Stop  R2",
+   };
 
 // "Testzeichensazluunge1"
 
@@ -117,9 +120,8 @@ enum Group3
 
 //char group3 =  "Akkustand.Mode.Panels Smirk.R2";
 char *group3[] = { 
-  
-   "Akkustand.Mode.Panels",
-   "Smirk.R2"};
+   "Akkustand Panels 0-10",
+   "Mode 0-10  Smirk  R2"};
 
 
 // "Testzeichensazluunge1"
@@ -136,11 +138,11 @@ enum Group4
 };
 
 
-//char group4 = "Cantina.Manama.Play Stop.R2";
+//char group4 = "Cantina Manama Play Stop R2";
 char *group4[] = { 
-  
-   "Cantina.Manama.Play",
-   "Stop.R2"};
+   "  Cantina Manama ",
+   " Play 0-10 Stop R2",
+   };
 // "Testzeichensazluunge1"
 //Grammars and Words
 enum Wordsets
@@ -162,6 +164,12 @@ enum Wordset1
   S1_HELLO = 7,
 };
 
+char *set1[] = { 
+   "Action Move Turn Run",
+   "Look Attack Stop Hello",
+   };
+// "Testzeichensazluunge1"
+
 
 enum Wordset2 
 {
@@ -172,6 +180,13 @@ enum Wordset2
   S2_FORWARD = 4,
   S2_BACKWARD = 5,
 };
+
+char *set2[] = { 
+   "Left Right Up Down",
+   "Forward Backward",
+   };
+// "Testzeichensazluunge1"
+
 
 
 enum Wordset3 
@@ -190,21 +205,34 @@ enum Wordset3
 };
 
 
+
 // use negative group for wordsets
 int8_t group, idx;
 
 // store last group
 int8_t last_group;
 
-
+//int8_t level;
 
 unsigned long previousMillis = 0;        // will store last time LED was updated
 
 // constants won't change:
 const long interval = 10;
 
-String setcom;
+//String setcom;
+
+int Setcom = 0;
+
+#define RES 0
+#define TOOL 1
+#define POWER 2
+#define MODE 3
+#define PANELS 4
+#define PLAY 5 
+
+
 String CMD;
+
 int cur=0;
 
 int siz=0;
@@ -307,15 +335,9 @@ void loop()
   
   unsigned long currentMillis = millis();
   
-  //delay(2000);
-  if (currentMillis - previousMillis >= interval) {
-    // save the last time you blinked the LED
-   // previousMillis = currentMillis;
-
-    // if the LED is off turn it on and vice-versa:
-     //displayOut(CMD);
-    }
+  
    displayOut(CMD);
+   
   
   if (easyvr.getID() < EasyVR::EASYVR3)
     easyvr.setPinOutput(EasyVR::IO1, HIGH); // LED on (listening)
@@ -340,9 +362,10 @@ void loop()
     // allows Commander to request bridge on Zero (may interfere with user protocol)
     if (pcSerial.read() == '?')
     {
-      setup();
+      setup(); 
       return;
-    }
+    }    
+
     // <<-- can do some processing here, while the module is busy
   }
   while (!easyvr.hasFinished());
@@ -387,8 +410,8 @@ void loop()
           break;
         if (pos != idx)
           continue;
-        pcSerial.print(F(" = "));
-        pcSerial.println(name);
+        //pcSerial.print(F(" = "));
+        //pcSerial.println(name);
          CMD = name;
         break;
       }
@@ -411,12 +434,12 @@ void loop()
     pcSerial.print(idx);
     if (easyvr.dumpCommand(group, idx, name, train))
     {
-      pcSerial.print(" = ");
-      pcSerial.println(name);
+      //pcSerial.print(" = ");
+      //pcSerial.println(name);
       CMD = name;
     }
     else
-      pcSerial.println();
+    pcSerial.println();
     // perform some action
     action();
   }
@@ -438,6 +461,7 @@ void action()
   switch (group)
   {
   case GROUP_0:
+  //level= 0;
     switch (idx)
     {
     case G0_R2:
@@ -451,7 +475,8 @@ void action()
     {
     case G1_HILF_MIR:
       // write your action code here
-      sendcom("mode3");
+      //sendcom("mode3");
+      ComPort.print(F("mode3\r")); //Check if is R or N
       group = 2;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G1_SETUP:
@@ -464,19 +489,21 @@ void action()
       break;
     case G1_WIE_GEHTS:
       // write your action code here
-      sendcom("$51");
+      //sendcom("$51");
+      ComPort.print(F("$51\r")); //Check if is R or N
       group = -1 ;//GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G1_DRIVE:
       // write your action code here
-      last_group = GROUP_1; //Set Last Group
+      //last_group = GROUP_1; //Set Last Group
       group = -2;// 1_STOP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G1_R2:
       // write your action code here
-      sendcom(":SE00");
+      //sendcom(":SE00");
+      ComPort.print(F(":SE00\r")); //Check if is R or N
       group = 0; // GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     }
@@ -487,42 +514,49 @@ void action()
     case G2_GIB_MIR_FEUER:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#FION");
+      //sendcom("#FION");
+      ComPort.print(F("#FION\r")); //Check if is R or N
       break;
+      
     case G2_DANKE:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#FIOFF");
+      //sendcom("#FIOFF");
+      ComPort.print(F("#FIOFF\r")); //Check if is R or N
       break;
     case G2_FESTHALTEN:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#GAON");
+      //sendcom("#GAON");
+      ComPort.print(F("#GAON\r")); //Check if is R or N
       break;
     case G2_FEST:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#CC");
+      //sendcom("#CC");
+      ComPort.print(F("#CC\r")); //Check if is R or N
       break;
     case G2_LOS:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#OC");
+      //sendcom("#OC");
+      ComPort.print(F("#OC\r")); //Check if is R or N
       break;
     case G2_SCHRAUBER:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("#SAON");
+      //sendcom("#SAON");
+      ComPort.print(F("#SAON\r")); //Check if is R or N
       break;
     case G2_TOOL:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      setcom = "tool";
+      Setcom = TOOL;
       last_group = GROUP_2; //Set Last Group
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G2_POWER:
-      setcom ="power";
+      Setcom = POWER;
       last_group = GROUP_2;
       // write your action code here
       group = SET_3; // <-- or jump to another group or wordset for composite commands
@@ -530,7 +564,8 @@ void action()
     case G2_STOP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("CBD1");
+      //sendcom("CBD1");
+      ComPort.print(F("CBD1\r")); //Check if is R or N
       break;
     case G2_R2:
       // write your action code here
@@ -544,12 +579,13 @@ void action()
     case G3_AKKUSTAND:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("akkustand");
+      //sendcom("akkustand");
+      ComPort.print(F("akkustand\r")); //Check if is R or N
       break;
     case G3_MODE:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      setcom ="mode";
+      Setcom =MODE;
       last_group = GROUP_3; //Set Last Group
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       
@@ -557,14 +593,15 @@ void action()
     case G3_PANELS:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      setcom ="panels";
+      Setcom = PANELS;
       last_group = GROUP_3; //Set Last Group
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G3_SMIRK:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom(":SE02");
+      //sendcom(":SE02");
+      ComPort.print(F(":SEo2\r")); //Check if is R or N
       break;
     case G3_R2:
       // write your action code here
@@ -578,23 +615,26 @@ void action()
     case G4_CANTINA:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom(":SE07");
+      //sendcom(":SE07");
+      ComPort.print(F(":SE07\r")); //Check if is R or N
       break;
     case G4_MANAMA:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("CB7");
+      // sendcom("CB7");
+      ComPort.print(F("CB7\r")); //Check if is R or N
       break;
     case G4_PLAY:
       // write your action code here
       last_group = GROUP_4; //Set Last Group
-      setcom ="play";
+      Setcom = PLAY;
       group = SET_3;// GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case G4_STOP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      sendcom("$s");
+      //sendcom("$s");
+      ComPort.print(F("$s\r")); //Check if is R or N
       break;
     case G4_R2:
       // write your action code here
@@ -608,35 +648,55 @@ void action()
     case S1_ACTION:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE14");
+      ComPort.print(F(":SE14\r")); //Check if is R or N
       break;
     case S1_MOVE:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE13");
+      ComPort.print(F(":SE13\r")); //Check if is R or N
+      //back(group);
       break;
     case S1_TURN:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom("find");
+      ComPort.print(F("find\r")); //Check if is R or N
       break;
     case S1_RUN:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE04");
+      ComPort.print(F(":SE04\r")); //Check if is R or N
       break;
     case S1_LOOK:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom("human");
+      ComPort.print(F("human\r")); //Check if is R or N
       break;
     case S1_ATTACK:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE01");
+      ComPort.print(F(":SE01\r")); //Check if is R or N
       break;
     case S1_STOP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
+      //group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE10");
+      ComPort.print(F(":SE10\r")); //Check if is R or N
       group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case S1_HELLO:
       // write your action code here
-      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
+     
+      //group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
+      //sendcom(":SE03");
+      ComPort.print(F(":SE03\r")); //Check if is R or N
+       group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     }
     break;
@@ -646,32 +706,48 @@ void action()
     case S2_LEFT:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //back(group);
+      //group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
+      ComPort.print(F("$m\r")); //Check if is R or N
+      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case S2_RIGHT:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //back(group);
+      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case S2_UP:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //sendcom("$+");
+      ComPort.print(F("$+\r")); //Check if is R or N
+      //back(group);
+      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case S2_DOWN:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //sendcom("$-");
+      ComPort.print(F("$-\r")); //Check if is R or N
+     // back(group);
+     group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     case S2_FORWARD:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //sendcom("$f");
+      ComPort.print(F("$f\r")); //Check if is R or N
+      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
+      //back(group);
       break;
     case S2_BACKWARD:
       // write your action code here
       // group = GROUP_X\SET_X; <-- or jump to another group or wordset for composite commands
-      back(group);
+      //sendcom("$m");
+      ComPort.print(F("$m\r")); //Check if is R or N
+      //back(group);
+      group = GROUP_1;//\SET_X; <-- or jump to another group or wordset for composite commands
       break;
     }
     break;
